@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "types.h"
+#include "gmv.h"
 #define DEFAULT_ALG NRU
 
 // Algortimo de substituição rodando no momento
