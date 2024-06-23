@@ -19,8 +19,8 @@ int main(int argc, char** argv) {
     }
 
     setAlg(argv);
-    
-    
+
+
 }
 
 void setAlg(char **arguments) {
@@ -39,4 +39,5 @@ void setAlg(char **arguments) {
             alg_param = atoi(arguments[1]);
             break;
     }
-} 
+}
+

@@ -6,6 +6,8 @@ typedef struct page_info {
     char frame;
     char m;
     char r;
+    int age;
+    int last_used;
 } PageInfo;
 
 typedef struct page_table {

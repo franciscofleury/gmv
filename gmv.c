@@ -10,7 +10,7 @@ int get_page(GmvControl *gmv, int page, char mode) {
     } else {
         frame = page_fault(gmv, page);
     }
-    
+
     tabela_atual.tabela[page].m = (mode == 'w')? 1: tabela_atual.tabela[page].m;
     tabela_atual.tabela[page].r = (mode == 'r')? 1: tabela_atual.tabela[page].r;
 
@@ -26,5 +26,6 @@ int page_fault(GmvControl *gmv, int page) {
             return i;
         }
     }
+    
     // Chamar algoritmo de substituição
 }
