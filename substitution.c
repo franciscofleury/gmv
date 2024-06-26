@@ -4,49 +4,7 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/time.h>
-#include "types.h"
 #include "gmv.h"
-#include "substitution.h"
-
-// Algortimo de substituição rodando no momento
-SUB_ALG alg = DEFAULT_ALG;
-
-int get_current_time();
-
-int remove_page(GmvControl *gmv)
-{
-    int page_to_replace;
-    switch (alg)
-    {
-    case NRU:
-        page_to_replace = subs_NRU(gmv);
-        break;
-    case SecondChance:
-        page_to_replace = subs_2nCh(gmv);
-        break;
-    case LRU:
-        page_to_replace = subs_LRU(gmv);
-        break;
-    case WorkingSet:
-        page_to_replace = subs_ws(gmv);
-        break;
-    default:
-        fprintf(stderr, "Erro ao escolher algoritmo de substituição!\n");
-        return -1;
-    }
-    PageTable *current_table = gmv->process_tables + gmv->current_process;
-    int frame_to_reuse = current_table->tabela[page_to_replace].frame;
-
-    // Marca a página antiga como não estando mais em um frame
-    current_table->tabela[page_to_replace].frame = -1;
-    current_table->tabela[page_to_replace].r = 0;
-    current_table->tabela[page_to_replace].m = 0;
-
-    // Atualiza a tabela de frames para indicar que o frame está agora livre
-    gmv->frame_table[frame_to_reuse] = 0;
-
-    return frame_to_reuse;
-}
 
 int subs_NRU(GmvControl *gmv)
 {
@@ -144,9 +102,37 @@ int subs_WS(GmvControl *gmv, int k)
     return oldest_page_id; // Caso não encontre uma página para substituir
 }
 
-int get_current_time()
+int remove_page(GmvControl *gmv)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000000 + tv.tv_usec;
+    int page_to_replace;
+    switch (gmv->alg)
+    {
+    case NRU:
+        page_to_replace = subs_NRU(gmv);
+        break;
+    case SecondChance:
+        page_to_replace = subs_2nCh(gmv);
+        break;
+    case LRU:
+        page_to_replace = subs_LRU(gmv);
+        break;
+    case WorkingSet:
+        page_to_replace = subs_ws(gmv);
+        break;
+    default:
+        fprintf(stderr, "Erro ao escolher algoritmo de substituição!\n");
+        return -1;
+    }
+    PageTable *current_table = gmv->process_tables + gmv->current_process;
+    int frame_to_reuse = current_table->tabela[page_to_replace].frame;
+
+    // Marca a página antiga como não estando mais em um frame
+    current_table->tabela[page_to_replace].frame = -1;
+    current_table->tabela[page_to_replace].r = 0;
+    current_table->tabela[page_to_replace].m = 0;
+
+    // Atualiza a tabela de frames para indicar que o frame está agora livre
+    gmv->frame_table[frame_to_reuse] = 0;
+
+    return frame_to_reuse;
 }

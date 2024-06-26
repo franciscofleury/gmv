@@ -2,41 +2,61 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include "types.h"
-#include "gmv.h"
-#include "substitution.h"
-
-// Parâmetro adicional do algoritmo (só necessário para WorkingSet)
-int alg_param = -1; // -1 indica que não existe parâmetro para o algoritmo selecionado
+#include "public_gmv.h"
 
 // Padrão de entrada: ./main <process_file_1> <process_file_2> <process_file3> <sub_alg> <alg_param>?
 int main(int argc, char **argv)
 {
-    if (argc < 5 || (strcmp(argv[4], "WorkingSet") == 0) && argc != 6)
+    GmvControl *gmv = get_gmv();
+    int expected_argc = PROCESS_N + 2;
+    if (argc < expected_argc || (strcmp(argv[4], "WorkingSet") == 0) && argc != expected_argc + 1)
     {
         fprintf(stderr, "Erro! A entrada deve estar no formato:\n./main <process_file_1> <process_file_2> <process_file3> <sub_alg> <alg_param>?\n");
         return 1;
     }
 
-    setAlg(argv);
+    set_up_alg(gmv, argv);
+
+    FILE *process_files[PROCESS_N];
+    for (int i = 0; i < PROCESS_N; i++)
+    {
+        process_files[i] = fopen(argv[i + 1], "r");
+        if (process_files[i] == NULL)
+        {
+            fprintf(stderr, "Erro ao ler arquivo %s\n", argv[i + 1]);
+            return 2;
+        }
+    }
+
+    int running = 1;
+    while (running)
+    {
+        FILE *file = process_files[gmv->current_process];
+        char command[4];
+        fread(command, 1, 4, file);
+        int page_number = atoi(command[0]) * 10 + atoi(command[1]);
+        char mode = command[2];
+        int page_frame = get_page(gmv, page_number, mode);
+        gmv->current_process = (gmv->current_process + 1) % PROCESS_N;
+    }
 }
 
-void setAlg(char **arguments)
+void set_up_alg(GmvControl *gmv, char **arguments)
 {
-    switch (arguments[0][0])
+    switch (arguments[PROCESS_N + 1][0])
     {
     case 'N':
-        alg = NRU;
+        setAlg(gmv, NRU);
         break;
     case 'L':
-        alg = LRU;
+        setAlg(gmv, LRU);
         break;
     case 'S':
-        alg = SecondChance;
+        setAlg(gmv, SecondChance);
         break;
     case 'W':
-        alg = WorkingSet;
-        alg_param = atoi(arguments[1]);
+        int alg_param = atoi(arguments[PROCESS_N + 2]);
+        setAlg(gmv, WorkingSet, alg_param);
         break;
     }
 }
