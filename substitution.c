@@ -14,6 +14,8 @@ int subs_NRU(GmvControl *gmv)
     for (int i = 0; i < VIRTUAL_SIZE; i++)
     {
         PageInfo page = current_table.tabela[i];
+        if (page.frame == -1)
+            continue;
         int r = page.r;
         int m = page.m;
         if (category >= 0 && !r && !m)
@@ -37,6 +39,7 @@ int subs_NRU(GmvControl *gmv)
             page_to_replace = i;
         }
     }
+    printf("page selected: %d\n", page_to_replace);
     return page_to_replace; // Caso não encontre uma página para substituir (deve ser tratado)
 }
 
@@ -108,7 +111,9 @@ int remove_page(GmvControl *gmv)
     switch (gmv->alg)
     {
     case NRU:
+        printf("using nru...\n");
         page_to_replace = subs_NRU(gmv);
+        printf("page returned: %d\n", page_to_replace);
         break;
     case SecondChance:
         page_to_replace = subs_2nCh(gmv);
@@ -117,7 +122,7 @@ int remove_page(GmvControl *gmv)
         page_to_replace = subs_LRU(gmv);
         break;
     case WorkingSet:
-        page_to_replace = subs_ws(gmv);
+        page_to_replace = subs_WS(gmv, gmv->alg_param);
         break;
     default:
         fprintf(stderr, "Erro ao escolher algoritmo de substituição!\n");

@@ -31,7 +31,7 @@ typedef struct page_table
 typedef struct gmv_control
 {
     PageTable process_tables[PROCESS_N];
-    PageInfo *frame_table[RAM_SIZE];
+    int frame_table[RAM_SIZE];
     int current_process;
     SUB_ALG alg;
     int alg_param;
