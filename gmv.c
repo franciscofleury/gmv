@@ -39,14 +39,8 @@ int set_alg(GmvControl *gmv, SUB_ALG alg)
 
 int set_param_alg(GmvControl *gmv, SUB_ALG alg, int alg_param)
 {
-    if (alg != WorkingSet)
-    {
-        fprintf(stderr, "Este algoritmo não necessita de parâmetro!");
-        return 0;
-    }
     gmv->alg = alg;
     gmv->alg_param = alg_param;
-
     return 1;
 }
 
@@ -55,6 +49,16 @@ int update_guard(int virtual_time)
     if (virtual_time == 0)
         return 0;
     if (virtual_time % UPDATE_RATIO != 0)
+        return 0;
+
+    return 1;
+}
+
+int delete_guard(int virtual_time)
+{
+    if (virtual_time == 0)
+        return 0;
+    if (virtual_time % DELETE_RATIO != 0)
         return 0;
 
     return 1;
@@ -87,7 +91,7 @@ int reset_r(GmvControl *gmv)
 {
     PageTable *current_table = gmv->process_tables + gmv->current_process;
 
-    if (!update_guard(current_table->virtual_time))
+    if (!delete_guard(current_table->virtual_time))
         return 0;
 
     for (int i = 0; i < VIRTUAL_SIZE; i++)
@@ -102,12 +106,11 @@ int reset_r(GmvControl *gmv)
 // Essa função é chamada sempre que um processo faz um acesso/escrita à memória
 PageLog *get_page(GmvControl *gmv, int page, char mode)
 {
-    update_page_info(gmv);
     PageTable *tabela_atual = gmv->process_tables + gmv->current_process;
-
     tabela_atual->tabela[page].r = 1;
-    tabela_atual->tabela[page].m = (mode == 'w') ? 1 : tabela_atual->tabela[page].m;
-    printf("getting page\n");
+    tabela_atual->tabela[page].m = (mode == 'W') ? 1 : tabela_atual->tabela[page].m;
+    update_page_info(gmv);
+
     PageLog *log = NULL;
     if (tabela_atual->tabela[page].frame == -1)
     {
@@ -118,6 +121,7 @@ PageLog *get_page(GmvControl *gmv, int page, char mode)
 
     reset_r(gmv);
 
+    tabela_atual->tabela[page].r = 1;
     return log;
 }
 
@@ -135,6 +139,7 @@ PageLog *page_fault(GmvControl *gmv, int page)
             log->frame = i;
             log->new_page = page;
             log->old_page = -1;
+            log->process = gmv->current_process;
             return log;
         }
         i++;

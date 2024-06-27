@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #define MAX_LOGS 300
+#define SHARE_TIME 3
 #include "public_gmv.h"
 
 void set_up_alg(GmvControl *gmv, char algorithm, int k);
@@ -37,6 +38,10 @@ int main(int argc, char **argv)
         char algorithm;
         printf("Deseja parar o programa? (s/n)\n");
         scanf("%c", &stop_command);
+        if (stop_command == 's')
+        {
+            break;
+        }
         printf("Selecione o algoritmo de substituição:\n");
         printf("Digite 'N' - NRU\n");
         printf("Digite 'L' - LRU\n");
@@ -44,15 +49,6 @@ int main(int argc, char **argv)
         printf("Digite 'W' - Working Set\n");
         scanf("%c", &thrash);
         scanf("%c", &algorithm);
-
-        if (algorithm)
-        {
-            if (algorithm == 'W')
-            {
-                printf("Digite o valor de do parâmetro k para o algoritmo Working Set:\n");
-                scanf("%d", &k_parameter);
-            }
-        }
 
         set_up_alg(gmv, algorithm, k_parameter);
 
@@ -62,12 +58,12 @@ int main(int argc, char **argv)
         int page_fault_count = 0;
         PageLog *log_vec[MAX_LOGS];
         running = rounds;
+        int process_time = 0;
         while (running--)
         {
             FILE *file = process_files[gmv->current_process];
             char command[4];
             fread(command, 1, 4, file);
-            printf("%c%c %c\n", command[0], command[1], command[2]);
             int page_number = (command[0] - '0') * 10 + command[1] - '0';
             char mode = command[2];
             PageLog *log = get_page(gmv, page_number, mode);
@@ -75,7 +71,11 @@ int main(int argc, char **argv)
             {
                 log_vec[page_fault_count++] = log;
             }
-            gmv->current_process = (gmv->current_process + 1) % PROCESS_N;
+            if (++process_time >= SHARE_TIME)
+            {
+                gmv->current_process = (gmv->current_process + 1) % PROCESS_N;
+                process_time = 0;
+            }
         }
 
         printf("Relatório:\n");
@@ -91,20 +91,38 @@ int main(int argc, char **argv)
             printf("LRU\n");
             break;
         case WorkingSet:
-            printf("WorkiongSet %d\n", k_parameter);
+            printf("WorkingSet %d\n", k_parameter);
             break;
         }
         printf("Rodadas executadas: %d\n", rounds);
+        printf("Page Fault gerados: %d\n", page_fault_count);
         for (int i = 0; i < page_fault_count; i++)
         {
             PageLog *log = log_vec[i];
-            printf("Px=%d", log->new_page);
+            printf("PROCESS=%d ", log->process);
+            printf("New_Page=%d", log->new_page);
             if (log->old_page != -1)
             {
-                printf(" Py=%d", log->old_page);
+                printf(" Old_Page=%d", log->old_page);
             }
-            printf(" Frame=%d\n", log->frame);
+            printf(" Frame=%d", log->frame);
+            if (log->saved)
+            {
+                printf(" SAVED");
+            }
+            printf("\n");
         }
+        for (int i = 0; i < PROCESS_N; i++)
+        {
+            PageTable *table = gmv->process_tables + i;
+            printf("TABELA PROCESSO %d:\n\n", i);
+            for (int j = 0; j < VIRTUAL_SIZE; j++)
+            {
+                printf("Page = %d; R = %d; M = %d; Frame = %d; WS_age = %d;\n", j, table->tabela[j].r, table->tabela[j].m, table->tabela[j].frame, table->tabela[j].last_used);
+            }
+            printf("\n");
+        }
+        stop_command = 'n';
     } while (stop_command != 'n');
 
     for (int i = 0; i < PROCESS_N; i++)

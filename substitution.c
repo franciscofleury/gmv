@@ -39,7 +39,6 @@ int subs_NRU(GmvControl *gmv)
             page_to_replace = i;
         }
     }
-    printf("page selected: %d\n", page_to_replace);
     return page_to_replace; // Caso não encontre uma página para substituir (deve ser tratado)
 }
 
@@ -50,13 +49,11 @@ int subs_2nCh(GmvControl *gmv)
     while (1)
     {
         PageInfo *page = current_table->tabela + pointer;
-        printf("process: %d; page: %d; frame: %d\n", gmv->current_process, pointer, page->frame);
         if (page->frame == -1)
         {
             pointer = (pointer + 1) % VIRTUAL_SIZE;
             continue;
         }
-        printf("page: %d; r: %d; w: %d\n", pointer, page->r, page->m);
         if (page->r)
         {
             page->r = 0; // Dá uma segunda chance
@@ -99,18 +96,29 @@ int subs_WS(GmvControl *gmv, int k)
     int current_time = current_table->virtual_time;
     int oldest_page_id;
     int oldest_age = MAX_INT;
-    for (int i = 0; i < VIRTUAL_SIZE; i++)
+    while (oldest_age == MAX_INT)
     {
-        PageInfo *page = current_table->tabela + i;
-        if (page->frame == -1)
-            continue;
-        int age = current_time - page->last_used;
-        if (age > k)
-            return i;
-        if (age <= k && age < oldest_age)
+        for (int i = 0; i < VIRTUAL_SIZE; i++)
         {
-            oldest_page_id = i;
-            oldest_age = age;
+            PageInfo *page = current_table->tabela + i;
+            if (page->frame == -1)
+                continue;
+            int age = current_time - page->last_used;
+            if (page->r)
+            {
+                page->last_used = current_table->virtual_time;
+                page->r = 0;
+                continue;
+            }
+            if (!page->r && age > (k))
+            {
+                return i;
+            }
+            if (!page->r && age <= (k) && age < oldest_age)
+            {
+                oldest_page_id = i;
+                oldest_age = age;
+            }
         }
     }
     return oldest_page_id; // Caso não encontre uma página para substituir
@@ -122,14 +130,10 @@ PageLog *remove_page(GmvControl *gmv)
     switch (gmv->alg)
     {
     case NRU:
-        printf("using nru...\n");
         page_to_replace = subs_NRU(gmv);
-        printf("page returned: %d\n", page_to_replace);
         break;
     case SecondChance:
-        printf("using 2nd...\n");
         page_to_replace = subs_2nCh(gmv);
-        printf("page returned: %d\n", page_to_replace);
         break;
     case LRU:
         page_to_replace = subs_LRU(gmv);
@@ -144,6 +148,7 @@ PageLog *remove_page(GmvControl *gmv)
     PageTable *current_table = gmv->process_tables + gmv->current_process;
     int frame_to_reuse = current_table->tabela[page_to_replace].frame;
 
+    int need_to_save = current_table->tabela[page_to_replace].m;
     // Marca a página antiga como não estando mais em um frame
     current_table->tabela[page_to_replace].frame = -1;
     current_table->tabela[page_to_replace].r = 0;
@@ -153,10 +158,9 @@ PageLog *remove_page(GmvControl *gmv)
     gmv->frame_table[frame_to_reuse] = 0;
 
     PageLog *log = (PageLog *)malloc(sizeof(PageLog));
-    printf("frame_to_reuse: %d\n", frame_to_reuse);
     log->frame = frame_to_reuse;
-    printf("log frame: %d\n", log->frame);
-
     log->old_page = page_to_replace;
+    log->saved = need_to_save;
+    log->process = gmv->current_process;
     return log;
 }

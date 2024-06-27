@@ -2,8 +2,9 @@
 #define RAM_SIZE 16
 #define VIRTUAL_SIZE 16
 #define DEFAULT_ALG NRU
-#define MAX_INT 5000
-#define UPDATE_RATIO 3
+#define MAX_INT 50000
+#define UPDATE_RATIO 1
+#define DELETE_RATIO 4
 
 typedef enum SUB_ALG
 {
@@ -42,4 +43,6 @@ typedef struct page_log
     int old_page;
     int new_page;
     int frame;
+    int saved;
+    int process;
 } PageLog;
