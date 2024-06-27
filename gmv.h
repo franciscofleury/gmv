@@ -36,3 +36,10 @@ typedef struct gmv_control
     SUB_ALG alg;
     int alg_param;
 } GmvControl;
+
+typedef struct page_log
+{
+    int old_page;
+    int new_page;
+    int frame;
+} PageLog;

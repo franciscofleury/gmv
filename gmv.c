@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "private_gmv.h"
 
-int page_fault(GmvControl *gmv, int page);
+PageLog *page_fault(GmvControl *gmv, int page);
 
 GmvControl *get_gmv()
 {
@@ -100,7 +100,7 @@ int reset_r(GmvControl *gmv)
 }
 
 // Essa função é chamada sempre que um processo faz um acesso/escrita à memória
-int get_page(GmvControl *gmv, int page, char mode)
+PageLog *get_page(GmvControl *gmv, int page, char mode)
 {
     update_page_info(gmv);
     PageTable *tabela_atual = gmv->process_tables + gmv->current_process;
@@ -108,44 +108,43 @@ int get_page(GmvControl *gmv, int page, char mode)
     tabela_atual->tabela[page].r = 1;
     tabela_atual->tabela[page].m = (mode == 'w') ? 1 : tabela_atual->tabela[page].m;
     printf("getting page\n");
-    int frame;
-    if (tabela_atual->tabela[page].frame != -1)
+    PageLog *log = NULL;
+    if (tabela_atual->tabela[page].frame == -1)
     {
-        frame = tabela_atual->tabela[page].frame;
-        printf("found frame %d\n", frame);
-    }
-    else
-    {
-        printf("calling page fault\n");
-        frame = page_fault(gmv, page);
-        tabela_atual->tabela[page].frame = frame;
-        gmv->frame_table[frame] = 1;
+        log = page_fault(gmv, page);
+        tabela_atual->tabela[page].frame = log->frame;
+        gmv->frame_table[log->frame] = 1;
     }
 
     reset_r(gmv);
 
-    return frame;
+    return log;
 }
 
-int page_fault(GmvControl *gmv, int page)
+PageLog *page_fault(GmvControl *gmv, int page)
 {
     PageTable current_table = gmv->process_tables[gmv->current_process];
+    PageLog *log;
     int i = 0;
     while (i < RAM_SIZE)
     {
         if (gmv->frame_table[i] == 0)
         {
             current_table.tabela[page].frame = i;
-            return i;
+            log = (PageLog *)malloc(sizeof(PageLog));
+            log->frame = i;
+            log->new_page = page;
+            log->old_page = -1;
+            return log;
         }
         i++;
     }
 
     // Chamar algoritmo de substituição
-    printf("frame is full, removing...\n");
-    int empty_frame = remove_page(gmv);
-    printf("returned frame: %d\n", empty_frame);
-    return empty_frame;
+    log = remove_page(gmv);
+    log->new_page = page;
+    current_table.tabela[page].frame = log->frame;
+    return log;
 }
 
 int verify_integrity(GmvControl *gmv)

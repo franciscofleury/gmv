@@ -116,7 +116,7 @@ int subs_WS(GmvControl *gmv, int k)
     return oldest_page_id; // Caso não encontre uma página para substituir
 }
 
-int remove_page(GmvControl *gmv)
+PageLog *remove_page(GmvControl *gmv)
 {
     int page_to_replace;
     switch (gmv->alg)
@@ -139,7 +139,7 @@ int remove_page(GmvControl *gmv)
         break;
     default:
         fprintf(stderr, "Erro ao escolher algoritmo de substituição!\n");
-        return -1;
+        return NULL;
     }
     PageTable *current_table = gmv->process_tables + gmv->current_process;
     int frame_to_reuse = current_table->tabela[page_to_replace].frame;
@@ -152,5 +152,11 @@ int remove_page(GmvControl *gmv)
     // Atualiza a tabela de frames para indicar que o frame está agora livre
     gmv->frame_table[frame_to_reuse] = 0;
 
-    return frame_to_reuse;
+    PageLog *log = (PageLog *)malloc(sizeof(PageLog));
+    printf("frame_to_reuse: %d\n", frame_to_reuse);
+    log->frame = frame_to_reuse;
+    printf("log frame: %d\n", log->frame);
+
+    log->old_page = page_to_replace;
+    return log;
 }
