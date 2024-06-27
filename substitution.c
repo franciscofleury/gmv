@@ -47,17 +47,16 @@ int subs_2nCh(GmvControl *gmv)
 {
     static int pointer; // Mantém a posição atual na fila circular
     PageTable *current_table = gmv->process_tables + gmv->current_process;
-    int selected = -1;
-    while (selected == -1)
+    while (1)
     {
         PageInfo *page = current_table->tabela + pointer;
         printf("process: %d; page: %d; frame: %d\n", gmv->current_process, pointer, page->frame);
         if (page->frame == -1)
         {
-            pointer++;
+            pointer = (pointer + 1) % VIRTUAL_SIZE;
             continue;
         }
-        printf("page: %d; r: %d; w: %d", pointer, page->r, page->m);
+        printf("page: %d; r: %d; w: %d\n", pointer, page->r, page->m);
         if (page->r)
         {
             page->r = 0; // Dá uma segunda chance
@@ -65,12 +64,10 @@ int subs_2nCh(GmvControl *gmv)
         }
         else
         {
-            selected = pointer;
-            printf("selected: %d\n", selected);
+            return pointer;
         }
     }
-    printf("selected2: %d\n", selected);
-    return selected; // Caso não encontre uma página para substituir (deve ser tratado)
+    return -1;
 }
 
 int subs_LRU(GmvControl *gmv)
