@@ -153,11 +153,17 @@ int page_fault(GmvControl *gmv, int page)
 int verify_integrity(GmvControl *gmv)
 {
     int used_frames[RAM_SIZE];
+    for (int i = 0; i < RAM_SIZE; i++)
+    {
+        used_frames[i] = 0;
+    }
     for (int i = 0; i < PROCESS_N; i++)
     {
         for (int j = 0; j < VIRTUAL_SIZE; j++)
         {
             int f = gmv->process_tables[i].tabela[j].frame;
+            if (f == -1)
+                continue;
             if (used_frames[f])
             {
                 fprintf(stderr, "Erro no gerenciamento de memória, 2 entradas apontam para o mesmo frame!\n");
