@@ -9,7 +9,9 @@ void set_up_alg(GmvControl *gmv, char algorithm, int k);
 // Padrão de entrada: ./main <process_file_1> <process_file_2> <process_file3> <sub_alg> <alg_param>?
 int main(int argc, char **argv)
 {
+    printf("aaa");
     GmvControl *gmv = get_gmv();
+    printf("aaa");
     int expected_argc = PROCESS_N + 2;
     if (argc < expected_argc || (strcmp(argv[4], "WorkingSet") == 0 && argc != expected_argc + 1))
     {
@@ -18,8 +20,9 @@ int main(int argc, char **argv)
     }
 
     char algorithm = argv[PROCESS_N + 1][0];
+    printf("aaa");
     int k_parameter = atoi(argv[PROCESS_N + 2]);
-
+    printf("k: %d\n", k_parameter);
     set_up_alg(gmv, algorithm, k_parameter);
 
     FILE *process_files[PROCESS_N];
@@ -34,7 +37,8 @@ int main(int argc, char **argv)
     }
     int running;
     char stop_command = 's';
-    do {
+    do
+    {
         printf("Selecione o algoritmo de substituição:\n");
         printf("Digite 'N' - NRU\n");
         printf("Digite 'L' - LRU\n");
@@ -42,8 +46,10 @@ int main(int argc, char **argv)
         printf("Digite 'W' - Working Set\n");
         scanf("%c", &algorithm);
 
-        if (algorithm) {
-            if (algorithm == 'W') {
+        if (algorithm)
+        {
+            if (algorithm == 'W')
+            {
                 printf("Digite o valor de do parâmetro k para o algoritmo Working Set:\n");
                 scanf("%d", &k_parameter);
             }

@@ -10,8 +10,6 @@ GmvControl *get_gmv()
     if (gmv == NULL)
     {
         gmv = (GmvControl *)malloc(sizeof(GmvControl));
-        gmv->alg = DEFAULT_ALG;
-        gmv->alg_param = -1;
         for (int i = 0; i < PROCESS_N; i++)
         {
             gmv->process_tables[i].virtual_time = 0;
