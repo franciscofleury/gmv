@@ -47,9 +47,17 @@ int subs_2nCh(GmvControl *gmv)
 {
     static int pointer; // Mantém a posição atual na fila circular
     PageTable *current_table = gmv->process_tables + gmv->current_process;
-    while (1)
+    int selected = -1;
+    while (selected == -1)
     {
         PageInfo *page = current_table->tabela + pointer;
+        printf("process: %d; page: %d; frame: %d\n", gmv->current_process, pointer, page->frame);
+        if (page->frame == -1)
+        {
+            pointer++;
+            continue;
+        }
+        printf("page: %d; r: %d; w: %d", pointer, page->r, page->m);
         if (page->r)
         {
             page->r = 0; // Dá uma segunda chance
@@ -57,10 +65,12 @@ int subs_2nCh(GmvControl *gmv)
         }
         else
         {
-            return pointer;
+            selected = pointer;
+            printf("selected: %d\n", selected);
         }
     }
-    return -1; // Caso não encontre uma página para substituir (deve ser tratado)
+    printf("selected2: %d\n", selected);
+    return selected; // Caso não encontre uma página para substituir (deve ser tratado)
 }
 
 int subs_LRU(GmvControl *gmv)
@@ -70,6 +80,8 @@ int subs_LRU(GmvControl *gmv)
     unsigned char oldest = -1;
     for (int i = 0; i < VIRTUAL_SIZE; i++)
     {
+        if (current_table->tabela[i].frame == -1)
+            continue;
         if (current_table->tabela[i].age < oldest)
         {
             oldest_page_id = i;
@@ -93,6 +105,8 @@ int subs_WS(GmvControl *gmv, int k)
     for (int i = 0; i < VIRTUAL_SIZE; i++)
     {
         PageInfo *page = current_table->tabela + i;
+        if (page->frame == -1)
+            continue;
         int age = current_time - page->last_used;
         if (age > k)
             return i;
@@ -116,7 +130,9 @@ int remove_page(GmvControl *gmv)
         printf("page returned: %d\n", page_to_replace);
         break;
     case SecondChance:
+        printf("using 2nd...\n");
         page_to_replace = subs_2nCh(gmv);
+        printf("page returned: %d\n", page_to_replace);
         break;
     case LRU:
         page_to_replace = subs_LRU(gmv);

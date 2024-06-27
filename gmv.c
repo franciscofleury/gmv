@@ -107,8 +107,8 @@ int get_page(GmvControl *gmv, int page, char mode)
     update_page_info(gmv);
     PageTable *tabela_atual = gmv->process_tables + gmv->current_process;
 
+    tabela_atual->tabela[page].r = 1;
     tabela_atual->tabela[page].m = (mode == 'w') ? 1 : tabela_atual->tabela[page].m;
-    tabela_atual->tabela[page].r = (mode == 'r') ? 1 : tabela_atual->tabela[page].r;
     printf("getting page\n");
     int frame;
     if (tabela_atual->tabela[page].frame != -1)
@@ -148,4 +148,24 @@ int page_fault(GmvControl *gmv, int page)
     int empty_frame = remove_page(gmv);
     printf("returned frame: %d\n", empty_frame);
     return empty_frame;
+}
+
+int verify_integrity(GmvControl *gmv)
+{
+    int used_frames[RAM_SIZE];
+    for (int i = 0; i < PROCESS_N; i++)
+    {
+        for (int j = 0; j < VIRTUAL_SIZE; j++)
+        {
+            int f = gmv->process_tables[i].tabela[j].frame;
+            if (used_frames[f])
+            {
+                fprintf(stderr, "Erro no gerenciamento de memória, 2 entradas apontam para o mesmo frame!\n");
+                return 0;
+            }
+
+            used_frames[f] = 1;
+        }
+    }
+    return 1;
 }

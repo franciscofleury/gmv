@@ -42,6 +42,8 @@ int main(int argc, char **argv)
         int page_frame = get_page(gmv, page_number, mode);
         printf("Process: %d; Page_number: %d; Frame_number: %d\n", gmv->current_process, page_number, page_frame);
         gmv->current_process = (gmv->current_process + 1) % PROCESS_N;
+        if (!verify_integrity(gmv))
+            return 3;
     }
 
     for (int i = 0; i < PROCESS_N; i++)
